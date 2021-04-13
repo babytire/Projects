@@ -1,0 +1,33 @@
+<html>
+  <body>
+    <div id = 'container'>
+      <div id = 'game-board'>
+      </div>
+    </div>
+    <div id = 'menu'>
+      <div  onclick = 'ReBuildBoard()' class = 'button'>
+        <p class = 'center'>New Game</p>
+      </div>
+      <div onclick = 'EnableBoardGrowth()' class = 'button' id = 'boardGrowth'>
+        <p class = 'center'>Enable Board Growth</p>
+      </div>
+      <div onclick = 'EnableScrableSquares()' class = 'button' id = 'scrableSquares'>
+        <p class = 'center'>Enable Scrable Squares </p>
+      </div>
+      <div onclick = 'EnableRulesBox()' class = 'button' id = 'rulesButton'>
+        <p class = 'center'>Rules</p>
+      </div>
+    </div>
+    <div id = 'rulesBox' class = 'blink'>
+      <h1>Basic Rules </h1>
+      <p>This is an implementation of the classic game Connect 4. Your goal is to connect four of your pucks in a row (horizontaly, vertically, or diagonally). Turns alternating between two players. On your turn, clicking on a cloumn will drop a puck down the column until it hits the bottom of the board or another puck. </p>
+      <h1>Special Rules</h1>
+      <p> Two special rule sets, Board Growth and Scrable Squares, have also been implemeted into this connect four game. Enabling Board Growth will cause the gameboard to dynamically grow as you play allowing for potentially infinite games. Whenver you place a puck that would otherwise be on the top, left, or right edge of the board, a new row or column will be added to the board. Enabling Scrable Squares will make the game randomly add four special types of game squares to board as it is build. Squares with grey pucks in them are dead squares. Nobody can play on them. Squares with a green background are squares for everybody. Both players can use them to make a connect four. At the beginning of the game these squares start with a white puck on them, but will begin to alternate between player colors as play commenses. Squares with an pink background are extra turn squares. The player who places their puck on that tile will be allowed to go again. Squares with a light blue background have a value of two. This means that a player only needs to connect three if one of their in their line is on a purple square, or connect two if thy can own 2 adjacent purple squares.</p>
+      <h1>Known Issues</h1>
+      <p> The game currently has a two known issues that still need to be resolved. The first of which is accidentally giving extra turns. If the mouse is not moved off of the square where the prevois puck was placed between turns there is potential that the wrong color puck will be dropped. This could potentially effect gameplay. The second is that when the board is generated dynamically, as it grows the board squares change slightly causing a barely noticable slant on the board. This will not effect gameplay.  </p>
+    </div>
+    <div id = 'win' class = 'blink'> x Player Wins</div>
+  </body>
+</html>
+
+

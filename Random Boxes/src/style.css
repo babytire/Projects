@@ -1,0 +1,13 @@
+div {
+  z-index: 1000;
+}
+
+.box {
+  position: absolute;
+  width: 200px;
+  height: 100px;
+  top: 0%;
+  left: 0%;
+  background-color: red;
+  transition: all 500ms ease-in;
+}
