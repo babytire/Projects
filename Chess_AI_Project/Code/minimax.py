@@ -1,7 +1,6 @@
 # Link to chessAPI docs: https://readthedocs.org/projects/python-chess/downloads/pdf/latest/
 # Link to chessAPI github: https://github.com/niklasf/python-chess
 
-
 import chess
 import chess.polyglot
 import chess.svg
@@ -11,9 +10,11 @@ import chess.syzygy
 import copy
 from pieces import piece_values, pawn_squares, knight_squares, bishop_squares, rook_squares, queen_squares, king_squares
 # path to human.bin, which holds opening moves
-book = "C:/Users/ryanh/Desktop/School/COS 470/SemesterProject/human.bin"
+book = "C:/Users/ryanh/Documents/GitHub/Projects/Chess_AI_Project/Chess_Books/human.bin"
 # path to endgame tablebase 
-end_table = "C:/Users/ryanh/Desktop/School/COS 470/SemesterProject/3-4-5piecesSyzygy/3-4-5"
+end_table = "C:/Users/ryanh/Documents/GitHub/Projects/Chess_AI_Project/Chess_Books/3-4-5piecesSyzygy/3-4-5"
+
+hash_table = {}
 
 def board_eval(board):
 
@@ -64,7 +65,7 @@ def board_eval(board):
 
 def minimax(board, target_depth):
     try:
-        move = chess.polyglot.MemoryMappedReader(r"C:\\Users\\ryanh\\Desktop\\School\\COS 470\\SemesterProject\\human.bin").weighted_choice(board).move
+        move = chess.polyglot.MemoryMappedReader(book).weighted_choice(board).move
         return move
     except:
         pass
@@ -100,11 +101,16 @@ def _alpha_beta(current_depth, board, target_depth, alpha, beta):
     best_score = -10000000
 
     if(current_depth == target_depth):
-        return board_eval(board)    #add quiesec here
+        return mid_trade(board, alpha, beta)
 
     for move in board.legal_moves:
         board.push(move)
-        score = -_alpha_beta(current_depth+1, board, target_depth, -beta, -alpha)
+
+        hash = chess.polyglot.zobrist_hash(board)
+        score = hash_table.get(hash, False)
+        if(not score):
+            score = -_alpha_beta(current_depth+1, board, target_depth, -beta, -alpha)
+            hash_table[hash] = score
         board.pop()
         if (score >= beta):
             return score
@@ -130,13 +136,42 @@ def alpha_beta(board, target_depth):
     top_move = None
     for move in board.legal_moves:
         board.push(move)
-        score = -_alpha_beta(1, board, target_depth, -beta, -alpha)
+
+        hash = chess.polyglot.zobrist_hash(board)
+        score = hash_table.get(hash, False)
+        if(not score):
+            score = -_alpha_beta(1, board, target_depth, -beta, -alpha)
+            # Don't need to add hash to table because we're on 1's layer of alpha_beta and will never see position again
         if(score >= top_score):
             top_score = score
             top_move = move
         alpha = max(score, alpha)
         board.pop()
+
+    # Flush hash table if move is a capture to save on space
+    if(board.is_capture(top_move)):
+        hash_table.clear
     return top_move
+
+# also called Quiescence Search
+def mid_trade(board, alpha, beta):
+    current_score = board_eval(board)
+
+    if current_score >= beta:
+        return beta
+    alpha = max(alpha, current_score)
+
+
+    for move in board.legal_moves:
+        if board.is_capture(move):
+            board.push(move)
+            score = -mid_trade(board, -beta, -alpha)
+            board.pop()
+
+            if score >= beta:
+                return beta
+            alpha = max(alpha, score)
+    return alpha
 
 def _alpha_beta_endgame(current_depth, board, target_depth, alpha, beta):
 
@@ -190,13 +225,16 @@ def playGame(board = chess.Board()):
             board.push(player_input)
             if(not board.is_game_over()):
                 print("\nBlack's Move:\n")
-                print(board)
-                board.push(alpha_beta(board, 4))
+                move = alpha_beta(board, 4)
+                print(move)
+                board.push(move)
     else:
         while(not board.is_game_over()):
             print("\nWhite's Move:\n")
             print(board)
-            board.push(alpha_beta(board, 4))
+            move = alpha_beta(board, 4)
+            print(move)
+            board.push(move)
             if(not board.is_game_over()):
                 print("\nBlack's Move:\n")
                 print(board)
@@ -212,19 +250,22 @@ def playSelf(board = chess.Board()):
     while(not board.is_game_over()):
         print("\nWhite's Move:\n")
         print(board)
-        board.push(alpha_beta(board, 4))
+        move = alpha_beta(board, 4)
+        print(move)
+        board.push(move)
         if(not board.is_game_over()):
             print("\nBlack's Move:\n")
             print(board)
-            board.push(alpha_beta(board, 4))
+            move = alpha_beta(board, 4)
+            print(move)
     print("\nFinal Board:\n")
     print(board)
     print("Game over: " + board.result())
 
 #playGame()
-#playSelf()
+playSelf()
 
-playSelf(chess.Board('1k2K3/8/3p4/1r6/6B1/8/8/8 w - - 0 1'))
+#playSelf(chess.Board('1k2K3/8/3p4/1r6/6B1/8/8/8 w - - 0 1'))
 
 #print(len(board.piece_map()))
 
