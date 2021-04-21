@@ -8,7 +8,7 @@ import chess.pgn
 import chess.engine
 import chess.syzygy
 import copy
-from pieces import piece_values, pawn_squares, knight_squares, bishop_squares, rook_squares, queen_squares, king_squares
+from pieces import piece_values, piece_values_by_num, pawn_squares, knight_squares, bishop_squares, rook_squares, queen_squares, king_squares
 # path to human.bin, which holds opening moves
 book = "C:/Users/ryanh/Documents/GitHub/Projects/Chess_AI_Project/Chess_Books/human.bin"
 # path to endgame tablebase 
@@ -18,46 +18,51 @@ hash_table = {}
 
 def board_eval(board):
 
-    if(board.is_checkmate()):
-        if(board.turn):
-            return -1000000
-        else:
-            return 1000000
-        if(board.is_stalemate()):
-            return 0
-        if(board.is_insufficient_material):
-            return 0
+    hash = chess.polyglot.zobrist_hash(board)
+    score = hash_table.get(hash, False)
+    if(not score):
+        if(board.is_checkmate()):
+            if(board.turn):
+                return -1000000
+            else:
+                return 1000000
+            if(board.is_stalemate()):
+                return 0
+            if(board.is_insufficient_material):
+                return 0
 
-    score = 0
-    pmap = board.piece_map()
-    for piece in pmap:
-        score += piece_values[pmap[piece].symbol()]
+        score = 0
+        pmap = board.piece_map()
+        for piece in pmap:
+            score += piece_values[pmap[piece].symbol()]
 
-        if(pmap[piece].symbol() == 'p'):
-            score -= pawn_squares[7-(piece//8)][7-(piece%8)]
-        elif(pmap[piece].symbol() == 'P'):
-            score += pawn_squares[piece//8][piece%8]
-        elif(pmap[piece].symbol() == 'n'):
-            score -= knight_squares[7-(piece//8)][7-(piece%8)]
-        elif(pmap[piece].symbol() == 'N'):
-            score += knight_squares[piece//8][piece%8]
-        elif(pmap[piece].symbol() == 'b'):
-            score -= bishop_squares[7-(piece//8)][7-(piece%8)]
-        elif(pmap[piece].symbol() == 'B'):
-            score += bishop_squares[piece//8][piece%8]
-        elif(pmap[piece].symbol() == 'r'):
-            score -= rook_squares[7-(piece//8)][7-(piece%8)]
-        elif(pmap[piece].symbol() == 'R'):
-            score += rook_squares[piece//8][piece%8]
-        elif(pmap[piece].symbol() == 'q'):
-            score -= queen_squares[7-(piece//8)][7-(piece%8)]
-        elif(pmap[piece].symbol() == 'Q'):
-            score += queen_squares[piece//8][piece%8]
-        elif(pmap[piece].symbol() == 'k'):
-            score -= king_squares[7-(piece//8)][7-(piece%8)]
-        elif(pmap[piece].symbol() == 'K'):
-            score += king_squares[piece//8][piece%8]
-    
+            if(pmap[piece].symbol() == 'p'):
+                score -= pawn_squares[7-(piece//8)][7-(piece%8)]
+            elif(pmap[piece].symbol() == 'P'):
+                score += pawn_squares[piece//8][piece%8]
+            elif(pmap[piece].symbol() == 'n'):
+                score -= knight_squares[7-(piece//8)][7-(piece%8)]
+            elif(pmap[piece].symbol() == 'N'):
+                score += knight_squares[piece//8][piece%8]
+            elif(pmap[piece].symbol() == 'b'):
+                score -= bishop_squares[7-(piece//8)][7-(piece%8)]
+            elif(pmap[piece].symbol() == 'B'):
+                score += bishop_squares[piece//8][piece%8]
+            elif(pmap[piece].symbol() == 'r'):
+                score -= rook_squares[7-(piece//8)][7-(piece%8)]
+            elif(pmap[piece].symbol() == 'R'):
+                score += rook_squares[piece//8][piece%8]
+            elif(pmap[piece].symbol() == 'q'):
+                score -= queen_squares[7-(piece//8)][7-(piece%8)]
+            elif(pmap[piece].symbol() == 'Q'):
+                score += queen_squares[piece//8][piece%8]
+            elif(pmap[piece].symbol() == 'k'):
+                score -= king_squares[7-(piece//8)][7-(piece%8)]
+            elif(pmap[piece].symbol() == 'K'):
+                score += king_squares[piece//8][piece%8]
+
+        hash_table[hash] = score
+
     if board.turn:
         return score
     else:
@@ -101,22 +106,19 @@ def _alpha_beta(current_depth, board, target_depth, alpha, beta):
     best_score = -10000000
 
     if(current_depth == target_depth):
-        return mid_trade(board, alpha, beta)
+        #return mid_trade(board, alpha, beta)
+        return board_eval(board)
+        
 
     for move in board.legal_moves:
         board.push(move)
-
-        hash = chess.polyglot.zobrist_hash(board)
-        score = hash_table.get(hash, False)
-        if(not score):
-            score = -_alpha_beta(current_depth+1, board, target_depth, -beta, -alpha)
-            hash_table[hash] = score
+        score = -_alpha_beta(current_depth+1, board, target_depth, -beta, -alpha)
         board.pop()
         if (score >= beta):
             return score
         best_score = max(best_score, score)
         alpha = max(alpha, best_score)
-        
+    
     return best_score
 
 def alpha_beta(board, target_depth):
@@ -127,8 +129,8 @@ def alpha_beta(board, target_depth):
     except:
         pass
 
-    if(len(board.piece_map()) <= 5):
-        return endgame(board)
+    #if(len(board.piece_map()) <= 5):
+    #    return endgame(board)
 
     alpha = -10000000
     beta = 10000000
@@ -136,41 +138,53 @@ def alpha_beta(board, target_depth):
     top_move = None
     for move in board.legal_moves:
         board.push(move)
-
-        hash = chess.polyglot.zobrist_hash(board)
-        score = hash_table.get(hash, False)
-        if(not score):
-            score = -_alpha_beta(1, board, target_depth, -beta, -alpha)
-            # Don't need to add hash to table because we're on 1's layer of alpha_beta and will never see position again
+        score = -_alpha_beta(1, board, target_depth, -beta, -alpha)
+        # Don't need to add hash to table because we're on 1's layer of alpha_beta and will never see position again
         if(score >= top_score):
             top_score = score
             top_move = move
         alpha = max(score, alpha)
         board.pop()
+        #print("finished analyzing move")
 
-    # Flush hash table if move is a capture to save on space
+    # Flush hash table if move is a capture to save on space; 
     if(board.is_capture(top_move)):
         hash_table.clear
+   
+    #print('Score: ' + str(top_score))
     return top_move
 
 # also called Quiescence Search
+# super inefficient?
 def mid_trade(board, alpha, beta):
     current_score = board_eval(board)
 
     if current_score >= beta:
         return beta
-    alpha = max(alpha, current_score)
+    alpha = min(alpha, current_score)
 
-
+    #order moves by Most Valuebul Victim - Least Valuebul Attacker
+    moves = []
     for move in board.legal_moves:
         if board.is_capture(move):
-            board.push(move)
-            score = -mid_trade(board, -beta, -alpha)
-            board.pop()
+            #print(board.piece_type_at(move.from_square))
+            #print(move)
+            attack_piece = board.piece_type_at(move.from_square)
+            victim_piece = board.piece_type_at(move.to_square)
 
-            if score >= beta:
-                return beta
-            alpha = max(alpha, score)
+            trade_value = piece_values_by_num.get(victim_piece) - piece_values_by_num.get(attack_piece)
+            moves.append([trade_value, move])
+    
+    quick_sort(moves, 0, len(moves)-1)
+
+    for move in moves[::-1]:
+        board.push(move[1])
+        score = -mid_trade(board, -beta, -alpha)
+        board.pop()
+        if score >= beta:
+            return beta
+        alpha = max(alpha, score)
+    
     return alpha
 
 def _alpha_beta_endgame(current_depth, board, target_depth, alpha, beta):
@@ -206,6 +220,32 @@ def endgame(board):
             best_move = move
         
     return best_move
+
+def quick_sort(arr, low, high):
+
+    if(low < high):
+        partition_index = partition(arr, low, high)
+        quick_sort(arr, low, partition_index - 1)
+        quick_sort(arr, partition_index + 1, high)
+
+def partition (arr, low, high):
+    
+    pivot = arr[high]
+    i = low - 1
+
+    j = low
+    for j in range(low, high):
+        if arr[j][0] <= pivot[0]:
+            i += 1
+            temp = arr[i]
+            arr[i] = arr[j]
+            arr[j] = temp
+
+    temp = arr[i + 1]
+    arr[i + 1] = arr[int(high)]
+    arr[high] = temp
+
+    return i+1
 
 def playGame(board = chess.Board()):
 
@@ -258,14 +298,13 @@ def playSelf(board = chess.Board()):
             print(board)
             move = alpha_beta(board, 4)
             print(move)
+            board.push(move)
     print("\nFinal Board:\n")
     print(board)
     print("Game over: " + board.result())
 
 #playGame()
 playSelf()
-
-#playSelf(chess.Board('1k2K3/8/3p4/1r6/6B1/8/8/8 w - - 0 1'))
 
 #print(len(board.piece_map()))
 
